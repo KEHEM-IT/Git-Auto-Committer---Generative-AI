@@ -36,15 +36,18 @@ let timerManager;
 function activate(context) {
     console.log('Git Auto Commit extension activated');
     // Initialize managers
-    statusBarManager = new statusBar_1.StatusBarManager();
+    statusBarManager = new statusBar_1.StatusBarManager(context);
     timerManager = new timerManager_1.TimerManager();
-    // Show welcome screen
-    welcomeScreen_1.WelcomeScreen.show(context);
+    // Show welcome screen on first install
+    welcomeScreen_1.WelcomeScreen.show(context, false);
     // Update status bar
     statusBarManager.update();
     context.subscriptions.push(statusBarManager.getStatusBarItem());
     // Register commands
-    context.subscriptions.push(vscode.commands.registerCommand('gitAutoCommit.generateCommit', () => generateCommit_1.GenerateCommitCommand.execute(context)), vscode.commands.registerCommand('gitAutoCommit.showDashboard', () => showDashboard_1.ShowDashboardCommand.execute(context)), vscode.commands.registerCommand('gitAutoCommit.toggleAutoCommit', () => toggleAutoCommit(context)), vscode.commands.registerCommand('gitAutoCommit.configureAI', () => configureAI_1.ConfigureAICommand.execute(context)));
+    context.subscriptions.push(vscode.commands.registerCommand('gitAutoCommit.generateCommit', () => generateCommit_1.GenerateCommitCommand.execute(context).then(() => {
+        statusBarManager.updateLastCommitTime();
+        statusBarManager.update();
+    })), vscode.commands.registerCommand('gitAutoCommit.showDashboard', () => showDashboard_1.ShowDashboardCommand.execute(context)), vscode.commands.registerCommand('gitAutoCommit.toggleAutoCommit', () => toggleAutoCommit(context)), vscode.commands.registerCommand('gitAutoCommit.configureAI', () => configureAI_1.ConfigureAICommand.execute(context)), vscode.commands.registerCommand('gitAutoCommit.showQuickMenu', () => statusBarManager.showQuickMenu()), vscode.commands.registerCommand('gitAutoCommit.showWelcome', () => welcomeScreen_1.WelcomeScreen.show(context, true)));
     // Start timers if enabled
     const config = vscode.workspace.getConfiguration('gitAutoCommit');
     if (config.get('enableAutoCommit', false)) {
@@ -59,6 +62,13 @@ function activate(context) {
             handleConfigChange(context);
         }
     }));
+    // Update status bar periodically
+    const statusBarInterval = setInterval(() => {
+        statusBarManager.update();
+    }, 10000); // Update every 10 seconds
+    context.subscriptions.push({
+        dispose: () => clearInterval(statusBarInterval)
+    });
 }
 exports.activate = activate;
 function handleConfigChange(context) {
@@ -81,6 +91,8 @@ function toggleAutoCommit(context) {
     const config = vscode.workspace.getConfiguration('gitAutoCommit');
     const current = config.get('enableAutoCommit', false);
     config.update('enableAutoCommit', !current, vscode.ConfigurationTarget.Global);
+    const message = !current ? '✓ Auto-commit enabled' : '✗ Auto-commit disabled';
+    vscode.window.showInformationMessage(message);
 }
 function deactivate() {
     timerManager.stopAllTimers();

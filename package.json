@@ -34,6 +34,24 @@
         "title": "Toggle Auto Commit",
         "category": "Git Auto Commit",
         "icon": "$(circle-slash)"
+      },
+      {
+        "command": "gitAutoCommit.showQuickMenu",
+        "title": "Show Quick Menu",
+        "category": "Git Auto Commit",
+        "icon": "$(menu)"
+      },
+      {
+        "command": "gitAutoCommit.showWelcome",
+        "title": "Show Welcome Screen",
+        "category": "Git Auto Commit",
+        "icon": "$(info)"
+      },
+      {
+        "command": "gitAutoCommit.configureAI",
+        "title": "Configure AI",
+        "category": "Git Auto Commit",
+        "icon": "$(sparkle)"
       }
     ],
     "configuration": {
@@ -138,6 +156,15 @@
         },
         {
           "command": "gitAutoCommit.toggleAutoCommit"
+        },
+        {
+          "command": "gitAutoCommit.showQuickMenu"
+        },
+        {
+          "command": "gitAutoCommit.showWelcome"
+        },
+        {
+          "command": "gitAutoCommit.configureAI"
         }
       ]
     }
