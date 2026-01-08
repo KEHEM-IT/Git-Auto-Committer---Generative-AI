@@ -364,7 +364,7 @@ export class AIService {
         if (analysis.hasCode) {
             const functions = analysis.functions.slice(0, 3);
             if (functions.length > 0) {
-                lines.push(`- Updated ${functions.map(f => this.humanizeFileName(f)).join(', ')}`);
+                lines.push(`- Updated ${functions.map((f: string) => this.humanizeFileName(f)).join(', ')}`);
             }
         }
 

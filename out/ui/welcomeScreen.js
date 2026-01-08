@@ -28,6 +28,12 @@ const vscode = __importStar(require("vscode"));
 class WelcomeScreen {
     static async show(context, forceShow = false) {
         const hasShownWelcome = context.globalState.get('hasShownWelcome', false);
+        // Open dashboard on first install
+        if (!hasShownWelcome && !forceShow) {
+            setTimeout(() => {
+                vscode.commands.executeCommand('gitAutoCommit.showDashboard');
+            }, 1000);
+        }
         if (hasShownWelcome && !forceShow)
             return;
         const panel = vscode.window.createWebviewPanel('gitAutoCommitWelcome', 'Welcome to Git Auto Commit', vscode.ViewColumn.One, {
