@@ -1,0 +1,176 @@
+{
+  "name": "git-auto-commit",
+  "displayName": "Git Auto Commit Generator AI",
+  "description": "Automatically generate meaningful commit messages and manage commits with AI-powered suggestions",
+  "version": "1.0.0",
+  "publisher": "KEHEM IT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitAutoCommit.generateCommit",
+        "title": "Generate Commit Message",
+        "category": "Git Auto Commit",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "gitAutoCommit.showDashboard",
+        "title": "Show Commit Dashboard",
+        "category": "Git Auto Commit",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "gitAutoCommit.toggleAutoCommit",
+        "title": "Toggle Auto Commit",
+        "category": "Git Auto Commit",
+        "icon": "$(circle-slash)"
+      }
+    ],
+    "configuration": {
+      "title": "Git Auto Commit",
+      "properties": {
+        "gitAutoCommit.enableAutoCommit": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically commit changes after the specified interval"
+        },
+        "gitAutoCommit.autoCommitWithoutConfirmation": {
+          "type": "boolean",
+          "default": false,
+          "description": "⚠️ Auto-commit WITHOUT confirmation dialogs (use with caution!)"
+        },
+        "gitAutoCommit.autoCommitInterval": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 120,
+          "description": "Auto commit interval in minutes (1-120)"
+        },
+        "gitAutoCommit.enableReminder": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show reminder notification when there are uncommitted changes"
+        },
+        "gitAutoCommit.reminderInterval": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 60,
+          "description": "Reminder interval in minutes (1-60)"
+        },
+        "gitAutoCommit.useAIGeneration": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use AI to generate more detailed commit messages (requires API configuration)"
+        },
+        "gitAutoCommit.aiProvider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "anthropic",
+            "gemini",
+            "openrouter"
+          ],
+          "default": "openai",
+          "description": "AI provider for commit message generation"
+        },
+        "gitAutoCommit.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API Key (for GPT models)"
+        },
+        "gitAutoCommit.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic API Key (for Claude models)"
+        },
+        "gitAutoCommit.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Google Gemini API Key"
+        },
+        "gitAutoCommit.openrouterApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenRouter API Key (access multiple models)"
+        },
+        "gitAutoCommit.aiModel": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "AI model to use (e.g., gpt-4o-mini, claude-3-5-sonnet-20241022, gemini-pro)"
+        },
+        "gitAutoCommit.commitMessageStyle": {
+          "type": "string",
+          "enum": [
+            "conventional",
+            "simple",
+            "detailed"
+          ],
+          "default": "conventional",
+          "description": "Commit message style: conventional (feat:, fix:, etc.), simple, or detailed"
+        }
+      }
+    },
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitAutoCommit.generateCommit",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "gitAutoCommit.generateCommit"
+        },
+        {
+          "command": "gitAutoCommit.showDashboard"
+        },
+        {
+          "command": "gitAutoCommit.toggleAutoCommit"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.75.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "eslint": "^8.28.0",
+    "typescript": "^4.9.3"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KEHEM-IT/Git-Auto-Commit-Generator-AI.git"
+  },
+  "keywords": [
+    "git",
+    "commit",
+    "auto-commit",
+    "ai",
+    "scm"
+  ],
+  "icon": "images/icon.png"
+}
