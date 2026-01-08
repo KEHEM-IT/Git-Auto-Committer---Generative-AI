@@ -596,7 +596,6 @@ async function generateAndCommit(context: vscode.ExtensionContext, silent: boole
             git.repositories[0].inputBox.value = commitMessage;
         }
 
-        const config = vscode.workspace.getConfiguration('gitAutoCommit');
         const autoCommitEnabled = config.get('enableAutoCommit', false);
         const autoCommitWithoutConfirm = config.get('autoCommitWithoutConfirmation', false);
 
@@ -938,6 +937,4 @@ export function deactivate() {
     stopReminderTimer();
 }
 
-function fetch(apiUrl: string, arg1: { method: string; headers: any; body: string; }) {
-    throw new Error('Function not implemented.');
-}
+
