@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import fetch from 'node-fetch';
+import { DefaultCommitGenerator } from './defaultCommitGenerator';
 
 interface AIConfig {
     provider: 'openai' | 'anthropic' | 'gemini' | 'openrouter';
@@ -21,22 +22,24 @@ export class AIService {
         const config = vscode.workspace.getConfiguration('gitAutoCommit');
         const useAI = config.get('useAIGeneration', false);
         
+        // Use default generator if AI is disabled
         if (!useAI) {
-            return this.generateBasicMessage(diff);
+            return DefaultCommitGenerator.generate(diff);
         }
 
         const aiConfig = await this.getAIConfig();
         
+        // Use default generator if no API key is configured
         if (!aiConfig.apiKey) {
-            vscode.window.showWarningMessage(
-                'No API key configured. Using rule-based generation.',
-                'Configure API Key'
+            vscode.window.showInformationMessage(
+                'Using default commit message generator. Configure AI for smarter messages.',
+                'Configure AI'
             ).then(selection => {
-                if (selection === 'Configure API Key') {
+                if (selection === 'Configure AI') {
                     vscode.commands.executeCommand('gitAutoCommit.configureAI');
                 }
             });
-            return this.generateBasicMessage(diff);
+            return DefaultCommitGenerator.generate(diff);
         }
 
         try {
@@ -45,9 +48,9 @@ export class AIService {
         } catch (error: any) {
             console.error('AI generation error:', error);
             vscode.window.showWarningMessage(
-                `AI generation failed: ${error.message}. Using rule-based generation.`
+                `AI generation failed: ${error.message}. Using default generator.`
             );
-            return this.generateBasicMessage(diff);
+            return DefaultCommitGenerator.generate(diff);
         }
     }
 
@@ -174,39 +177,11 @@ Return ONLY the commit message, no explanations or formatting.`;
         return data.choices[0].message.content.trim();
     }
 
+    /**
+     * @deprecated Use DefaultCommitGenerator.generate() instead
+     * This method is kept for backward compatibility
+     */
     private static generateBasicMessage(diff: string): string {
-        const lines = diff.split('\n');
-        const changes = {
-            added: 0,
-            modified: 0,
-            deleted: 0,
-            files: new Set<string>()
-        };
-
-        let currentFile = '';
-        for (const line of lines) {
-            if (line.startsWith('diff --git')) {
-                const match = line.match(/b\/(.*)/);
-                if (match) {
-                    currentFile = match[1];
-                    changes.files.add(currentFile);
-                }
-            } else if (line.startsWith('+') && !line.startsWith('+++')) {
-                changes.added++;
-            } else if (line.startsWith('-') && !line.startsWith('---')) {
-                changes.deleted++;
-            }
-        }
-
-        changes.modified = changes.files.size;
-
-        const parts = [];
-        if (changes.added > 0) parts.push(`+${changes.added}`);
-        if (changes.deleted > 0) parts.push(`-${changes.deleted}`);
-        
-        const fileList = Array.from(changes.files).slice(0, 2).join(', ');
-        const moreFiles = changes.files.size > 2 ? `, +${changes.files.size - 2} more` : '';
-        
-        return `Update ${changes.modified} file${changes.modified !== 1 ? 's' : ''} (${parts.join('/')}): ${fileList}${moreFiles}`;
+        return DefaultCommitGenerator.generate(diff);
     }
 }

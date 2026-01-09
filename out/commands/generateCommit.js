@@ -46,13 +46,19 @@ class GenerateCommitCommand {
             }
             const files = await gitService_1.GitService.getChangedFiles();
             const diff = await gitService_1.GitService.getGitDiff();
-            const config = vscode.workspace.getConfiguration('gitAutoCommit');
-            const useAI = config.get('useAIGeneration', false);
+            // Generate commit message using AIService
+            // AIService will automatically fallback to DefaultCommitGenerator if:
+            // - AI is disabled (useAIGeneration = false)
+            // - No API key is configured
+            // - AI generation fails
             let commitMessage = '';
-            vscode.window.showInformationMessage('Generating commit message...');
+            if (!silent) {
+                vscode.window.showInformationMessage('Generating commit message...');
+            }
             commitMessage = await aiService_1.AIService.generateCommitMessage(diff);
             await gitService_1.GitService.stageAllChanges();
             gitService_1.GitService.setCommitMessageInSourceControl(commitMessage);
+            const config = vscode.workspace.getConfiguration('gitAutoCommit');
             const autoCommitEnabled = config.get('enableAutoCommit', false);
             const autoCommitWithoutConfirm = config.get('autoCommitWithoutConfirmation', false);
             if (silent && autoCommitEnabled) {

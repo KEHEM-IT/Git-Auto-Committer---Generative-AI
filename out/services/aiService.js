@@ -29,6 +29,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AIService = void 0;
 const vscode = __importStar(require("vscode"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
+const defaultCommitGenerator_1 = require("./defaultCommitGenerator");
 class AIService {
     static async getAIConfig() {
         const config = vscode.workspace.getConfiguration('gitAutoCommit');
@@ -41,17 +42,19 @@ class AIService {
     static async generateCommitMessage(diff) {
         const config = vscode.workspace.getConfiguration('gitAutoCommit');
         const useAI = config.get('useAIGeneration', false);
+        // Use default generator if AI is disabled
         if (!useAI) {
-            return this.generateBasicMessage(diff);
+            return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
         }
         const aiConfig = await this.getAIConfig();
+        // Use default generator if no API key is configured
         if (!aiConfig.apiKey) {
-            vscode.window.showWarningMessage('No API key configured. Using rule-based generation.', 'Configure API Key').then(selection => {
-                if (selection === 'Configure API Key') {
+            vscode.window.showInformationMessage('Using default commit message generator. Configure AI for smarter messages.', 'Configure AI').then(selection => {
+                if (selection === 'Configure AI') {
                     vscode.commands.executeCommand('gitAutoCommit.configureAI');
                 }
             });
-            return this.generateBasicMessage(diff);
+            return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
         }
         try {
             const commitStyle = config.get('commitMessageStyle', 'conventional');
@@ -59,8 +62,8 @@ class AIService {
         }
         catch (error) {
             console.error('AI generation error:', error);
-            vscode.window.showWarningMessage(`AI generation failed: ${error.message}. Using rule-based generation.`);
-            return this.generateBasicMessage(diff);
+            vscode.window.showWarningMessage(`AI generation failed: ${error.message}. Using default generator.`);
+            return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
         }
     }
     static async callAIProvider(aiConfig, diff, style) {
@@ -170,39 +173,12 @@ Return ONLY the commit message, no explanations or formatting.`;
         const data = await response.json();
         return data.choices[0].message.content.trim();
     }
+    /**
+     * @deprecated Use DefaultCommitGenerator.generate() instead
+     * This method is kept for backward compatibility
+     */
     static generateBasicMessage(diff) {
-        const lines = diff.split('\n');
-        const changes = {
-            added: 0,
-            modified: 0,
-            deleted: 0,
-            files: new Set()
-        };
-        let currentFile = '';
-        for (const line of lines) {
-            if (line.startsWith('diff --git')) {
-                const match = line.match(/b\/(.*)/);
-                if (match) {
-                    currentFile = match[1];
-                    changes.files.add(currentFile);
-                }
-            }
-            else if (line.startsWith('+') && !line.startsWith('+++')) {
-                changes.added++;
-            }
-            else if (line.startsWith('-') && !line.startsWith('---')) {
-                changes.deleted++;
-            }
-        }
-        changes.modified = changes.files.size;
-        const parts = [];
-        if (changes.added > 0)
-            parts.push(`+${changes.added}`);
-        if (changes.deleted > 0)
-            parts.push(`-${changes.deleted}`);
-        const fileList = Array.from(changes.files).slice(0, 2).join(', ');
-        const moreFiles = changes.files.size > 2 ? `, +${changes.files.size - 2} more` : '';
-        return `Update ${changes.modified} file${changes.modified !== 1 ? 's' : ''} (${parts.join('/')}): ${fileList}${moreFiles}`;
+        return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
     }
 }
 exports.AIService = AIService;
