@@ -32,6 +32,8 @@ export class DashboardUI {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Git Commit Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -41,7 +43,7 @@ export class DashboardUI {
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #fff;
             padding: 30px;
             min-height: 100vh;
@@ -76,11 +78,13 @@ export class DashboardUI {
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
-        .header .emoji {
+        .header .icon-large {
             font-size: 60px;
             margin-bottom: 15px;
             display: inline-block;
             animation: bounce 2s infinite;
+            color: #fbbf24;
+            text-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         @keyframes bounce {
@@ -119,6 +123,8 @@ export class DashboardUI {
         .stat-card .icon {
             font-size: 40px;
             margin-bottom: 10px;
+            color: #fbbf24;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .stat-card .number {
@@ -149,6 +155,10 @@ export class DashboardUI {
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .settings-panel h2 i {
+            color: #fbbf24;
         }
 
         .setting-row {
@@ -230,6 +240,10 @@ export class DashboardUI {
             border: none;
         }
 
+        .btn i {
+            margin-right: 5px;
+        }
+
         .action-buttons {
             display: flex;
             gap: 15px;
@@ -251,6 +265,10 @@ export class DashboardUI {
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .commits-section h2 i {
+            color: #fbbf24;
         }
 
         .commit-card {
@@ -295,9 +313,18 @@ export class DashboardUI {
             border-radius: 5px;
         }
 
+        .commit-hash i {
+            margin-right: 5px;
+            color: #fbbf24;
+        }
+
         .commit-time {
             font-size: 13px;
             opacity: 0.8;
+        }
+
+        .commit-time i {
+            margin-right: 5px;
         }
 
         .commit-message {
@@ -305,6 +332,11 @@ export class DashboardUI {
             font-weight: 600;
             margin-bottom: 10px;
             line-height: 1.5;
+        }
+
+        .commit-message i {
+            margin-right: 8px;
+            color: #fbbf24;
         }
 
         .commit-files {
@@ -322,6 +354,10 @@ export class DashboardUI {
             font-size: 12px;
         }
 
+        .file-badge i {
+            margin-right: 5px;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -331,6 +367,8 @@ export class DashboardUI {
         .empty-state .icon {
             font-size: 80px;
             margin-bottom: 20px;
+            color: #fbbf24;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
 
         .empty-state h3 {
@@ -351,6 +389,7 @@ export class DashboardUI {
 
         .warning-box .icon {
             font-size: 24px;
+            color: #ff9800;
         }
 
         select {
@@ -370,7 +409,7 @@ export class DashboardUI {
         }
 
         select option {
-            background: #1e3c72;
+            background: #667eea;
             color: white;
         }
 
@@ -386,7 +425,7 @@ export class DashboardUI {
 <body>
     <div class="container">
         <div class="header">
-            <div class="emoji">📊</div>
+            <div class="icon-large"><i class="fas fa-chart-line"></i></div>
             <h1>Git Commit Dashboard</h1>
             <p style="opacity: 0.9; font-size: 18px;">Track your commits and manage automation</p>
         </div>
@@ -394,17 +433,17 @@ export class DashboardUI {
         <!-- Statistics -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="icon">📝</div>
+                <div class="icon"><i class="fas fa-code-commit"></i></div>
                 <div class="number">${totalCommits}</div>
                 <div class="label">Total Commits</div>
             </div>
             <div class="stat-card">
-                <div class="icon">🔥</div>
+                <div class="icon"><i class="fas fa-fire"></i></div>
                 <div class="number">${todayCommits}</div>
                 <div class="label">Today's Commits</div>
             </div>
             <div class="stat-card">
-                <div class="icon">📁</div>
+                <div class="icon"><i class="fas fa-folder-open"></i></div>
                 <div class="number">${filesChanged}</div>
                 <div class="label">Files Changed</div>
             </div>
@@ -412,7 +451,7 @@ export class DashboardUI {
 
         <!-- Settings Panel -->
         <div class="settings-panel">
-            <h2>⚙️ Current Configuration</h2>
+            <h2><i class="fas fa-cog"></i> Current Configuration</h2>
             
             <div class="setting-row">
                 <div class="setting-label">Auto Commit</div>
@@ -451,7 +490,7 @@ export class DashboardUI {
 
             ${autoWithoutConfirm ? `
                 <div class="warning-box">
-                    <span class="icon">⚠️</span>
+                    <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
                     <span>Commits will be made automatically without asking for confirmation!</span>
                 </div>
             ` : ''}
@@ -488,8 +527,8 @@ export class DashboardUI {
                     <div class="setting-value">
                         <span class="badge info">${PROVIDER_NAMES[aiProvider] || aiProvider}</span>
                         ${hasApiKey ? 
-                            '<span style="opacity: 0.9;">✓ API Key Configured</span>' : 
-                            '<span class="badge warning">⚠️ No API Key</span>'
+                            '<span style="opacity: 0.9;"><i class="fas fa-check-circle"></i> API Key Configured</span>' : 
+                            '<span class="badge warning"><i class="fas fa-exclamation-triangle"></i> No API Key</span>'
                         }
                     </div>
                 </div>
@@ -514,35 +553,35 @@ export class DashboardUI {
             ` : ''}
 
             <div class="action-buttons">
-                <button class="btn primary" onclick="refresh()">🔄 Refresh Dashboard</button>
-                <button class="btn primary" onclick="generateCommit()">✨ Generate Commit</button>
-                <button class="btn" onclick="openSettings()">⚙️ Advanced Settings</button>
-                <button class="btn" onclick="clearHistory()">🗑️ Clear History</button>
+                <button class="btn primary" onclick="refresh()"><i class="fas fa-sync-alt"></i> Refresh Dashboard</button>
+                <button class="btn primary" onclick="generateCommit()"><i class="fas fa-magic"></i> Generate Commit</button>
+                <button class="btn" onclick="openSettings()"><i class="fas fa-cog"></i> Advanced Settings</button>
+                <button class="btn" onclick="clearHistory()"><i class="fas fa-trash-alt"></i> Clear History</button>
             </div>
         </div>
 
         <!-- Commits Section -->
         <div class="commits-section">
-            <h2>📝 Recent Commits (${totalCommits})</h2>
+            <h2><i class="fas fa-history"></i> Recent Commits (${totalCommits})</h2>
             
             ${totalCommits === 0 ? `
                 <div class="empty-state">
-                    <div class="icon">🎯</div>
+                    <div class="icon"><i class="fas fa-inbox"></i></div>
                     <h3>No commits yet</h3>
                     <p>Start committing to see your history here!</p>
                     <button class="btn primary" onclick="generateCommit()" style="margin-top: 20px;">
-                        Make Your First Commit
+                        <i class="fas fa-plus-circle"></i> Make Your First Commit
                     </button>
                 </div>
             ` : commitHistory.map((commit, index) => `
                 <div class="commit-card" style="animation-delay: ${index * 0.05}s">
                     <div class="commit-header">
-                        <span class="commit-hash">#${commit.hash || 'N/A'}</span>
-                        <span class="commit-time">${this.formatTime(commit.timestamp)}</span>
+                        <span class="commit-hash"><i class="fas fa-hashtag"></i> ${commit.hash || 'N/A'}</span>
+                        <span class="commit-time"><i class="far fa-clock"></i> ${this.formatTime(commit.timestamp)}</span>
                     </div>
-                    <div class="commit-message">${this.escapeHtml(commit.message.split('\n')[0])}</div>
+                    <div class="commit-message"><i class="fas fa-comment-dots"></i> ${this.escapeHtml(commit.message.split('\n')[0])}</div>
                     <div class="commit-files">
-                        <span class="file-badge">${commit.files.length} file${commit.files.length !== 1 ? 's' : ''}</span>
+                        <span class="file-badge"><i class="fas fa-file-code"></i> ${commit.files.length} file${commit.files.length !== 1 ? 's' : ''}</span>
                         <span style="opacity: 0.8;">${commit.files.slice(0, 2).join(', ')}${commit.files.length > 2 ? ` +${commit.files.length - 2} more` : ''}</span>
                     </div>
                 </div>
