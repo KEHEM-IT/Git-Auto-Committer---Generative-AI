@@ -100,32 +100,56 @@
             "openrouter"
           ],
           "default": "openai",
+          "markdownEnumDescriptions": [
+            "OpenAI (GPT-4, GPT-4o, GPT-3.5)",
+            "Anthropic (Claude models)",
+            "Google Gemini",
+            "OpenRouter (Access to multiple models)"
+          ],
           "description": "AI provider for commit message generation"
-        },
-        "gitAutoCommit.openaiApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "OpenAI API Key (for GPT models)"
-        },
-        "gitAutoCommit.anthropicApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Anthropic API Key (for Claude models)"
-        },
-        "gitAutoCommit.geminiApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "Google Gemini API Key"
-        },
-        "gitAutoCommit.openrouterApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "OpenRouter API Key (access multiple models)"
         },
         "gitAutoCommit.aiModel": {
           "type": "string",
+          "enum": [
+            "gpt-4o-mini",
+            "gpt-4o",
+            "gpt-4-turbo",
+            "gpt-3.5-turbo",
+            "claude-3-5-sonnet-20241022",
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307",
+            "gemini-pro",
+            "gemini-pro-vision",
+            "anthropic/claude-3.5-sonnet",
+            "openai/gpt-4o",
+            "meta-llama/llama-3.1-405b-instruct",
+            "google/gemini-pro-1.5"
+          ],
           "default": "gpt-4o-mini",
-          "description": "AI model to use (e.g., gpt-4o-mini, claude-3-5-sonnet-20241022, gemini-pro)"
+          "markdownEnumDescriptions": [
+            "**OpenAI**: GPT-4o Mini - Fast and cost-effective (Recommended)",
+            "**OpenAI**: GPT-4o - Most capable GPT-4 model",
+            "**OpenAI**: GPT-4 Turbo - High performance",
+            "**OpenAI**: GPT-3.5 Turbo - Budget-friendly",
+            "**Anthropic**: Claude 3.5 Sonnet - Latest and most capable (Recommended)",
+            "**Anthropic**: Claude 3 Opus - Most powerful Claude 3",
+            "**Anthropic**: Claude 3 Sonnet - Balanced performance",
+            "**Anthropic**: Claude 3 Haiku - Fastest and most compact",
+            "**Gemini**: Gemini Pro - Google's flagship model (Recommended)",
+            "**Gemini**: Gemini Pro Vision - With vision capabilities",
+            "**OpenRouter**: Claude 3.5 Sonnet via OpenRouter",
+            "**OpenRouter**: GPT-4o via OpenRouter",
+            "**OpenRouter**: Llama 3.1 405B - Open source powerhouse",
+            "**OpenRouter**: Gemini Pro 1.5 via OpenRouter"
+          ],
+          "description": "AI model to use (select based on your chosen provider)"
+        },
+        "gitAutoCommit.aiApiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "API Key for the selected AI provider. Get your key from:\n- OpenAI: https://platform.openai.com/api-keys\n- Anthropic: https://console.anthropic.com/settings/keys\n- Gemini: https://makersuite.google.com/app/apikey\n- OpenRouter: https://openrouter.ai/keys",
+          "description": "API Key for commit message generation"
         },
         "gitAutoCommit.commitMessageStyle": {
           "type": "string",

@@ -30,17 +30,8 @@ export class GenerateCommitCommand {
 
             let commitMessage = '';
 
-            if (useAI) {
-                try {
-                    vscode.window.showInformationMessage('Generating AI commit message...');
-                    commitMessage = await AIService.generateCommitMessage(files, diff);
-                } catch (error) {
-                    vscode.window.showErrorMessage(`AI generation failed: ${error}. Falling back to rule-based generation.`);
-                    commitMessage = AIService.generateRuleBasedCommitMessage(files, diff);
-                }
-            } else {
-                commitMessage = AIService.generateRuleBasedCommitMessage(files, diff);
-            }
+            vscode.window.showInformationMessage('Generating commit message...');
+            commitMessage = await AIService.generateCommitMessage(diff);
 
             await GitService.stageAllChanges();
             GitService.setCommitMessageInSourceControl(commitMessage);

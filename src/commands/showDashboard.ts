@@ -14,29 +14,22 @@ export class ShowDashboardCommand {
             }
         );
 
-        const commitHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
-        panel.webview.html = DashboardUI.getDashboardHtml(commitHistory, context.extensionPath, panel.webview);
+        const updateDashboard = () => {
+            const commitHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
+            panel.webview.html = DashboardUI.getDashboardHtml(commitHistory, context.extensionPath, panel.webview);
+        };
+
+        updateDashboard();
 
         panel.webview.onDidReceiveMessage(
             async message => {
                 const config = vscode.workspace.getConfiguration('gitAutoCommit');
                 
                 switch (message.command) {
-                    case 'refresh':
-                        const updatedHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(updatedHistory, context.extensionPath, panel.webview);
-                        break;
-                        
                     case 'clearHistory':
                         await context.globalState.update('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml([], context.extensionPath, panel.webview);
+                        updateDashboard();
                         vscode.window.showInformationMessage('✓ Commit history cleared');
-                        break;
-                        
-                    case 'configureAI':
-                        await vscode.commands.executeCommand('gitAutoCommit.configureAI');
-                        const newHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(newHistory, context.extensionPath, panel.webview);
                         break;
                         
                     case 'openSettings':
@@ -52,10 +45,9 @@ export class ShowDashboardCommand {
                         const currentAuto = config.get('enableAutoCommit', false);
                         await config.update('enableAutoCommit', !currentAuto, vscode.ConfigurationTarget.Global);
                         vscode.window.showInformationMessage(
-                            !currentAuto ? 'Auto-commit enabled' : '✗ Auto-commit disabled'
+                            !currentAuto ? '✓ Auto-commit enabled' : '✗ Auto-commit disabled'
                         );
-                        const history1: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history1, context.extensionPath, panel.webview);
+                        updateDashboard();
                         break;
                         
                     case 'toggleConfirmation':
@@ -66,29 +58,36 @@ export class ShowDashboardCommand {
                                 ? '⚠️ Auto-commit will now proceed without confirmation' 
                                 : '✓ Auto-commit will ask for confirmation'
                         );
-                        const history2: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history2, context.extensionPath, panel.webview);
+                        updateDashboard();
                         break;
                         
-                    case 'updateInterval':
-                        await config.update('autoCommitInterval', message.value, vscode.ConfigurationTarget.Global);
-                        vscode.window.showInformationMessage(`✓ Commit interval updated to ${message.value} minutes`);
-                        const history3: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history3, context.extensionPath, panel.webview);
-                        break;
+                    case 'toggleAI':
+                        const currentAI = config.get('useAIGeneration', false);
+                        await config.update('useAIGeneration', !currentAI, vscode.ConfigurationTarget.Global);
                         
-                    case 'updateReminderInterval':
-                        await config.update('reminderInterval', message.value, vscode.ConfigurationTarget.Global);
-                        vscode.window.showInformationMessage(`✓ Reminder interval updated to ${message.value} minutes`);
-                        const history4: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history4, context.extensionPath, panel.webview);
-                        break;
+                        if (!currentAI) {
+                            // AI is being enabled, check if API key is configured
+                            const aiProvider = config.get('aiProvider', 'openai') as string;
+                            const apiKeyField = `${aiProvider}ApiKey`;
+                            const hasApiKey = !!(config.get(apiKeyField, '') as string);
+                            
+                            if (!hasApiKey) {
+                                vscode.window.showWarningMessage(
+                                    'AI Commiter enabled but no API key configured. Please configure your API key.',
+                                    'Configure Now'
+                                ).then(selection => {
+                                    if (selection === 'Configure Now') {
+                                        vscode.commands.executeCommand('gitAutoCommit.configureAI');
+                                    }
+                                });
+                            } else {
+                                vscode.window.showInformationMessage('✓ AI Commiter enabled');
+                            }
+                        } else {
+                            vscode.window.showInformationMessage('✗ AI Commiter disabled');
+                        }
                         
-                    case 'updateCommitStyle':
-                        await config.update('commitMessageStyle', message.value, vscode.ConfigurationTarget.Global);
-                        vscode.window.showInformationMessage(`✓ Commit style updated to ${message.value}`);
-                        const history5: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history5, context.extensionPath, panel.webview);
+                        updateDashboard();
                         break;
                 }
             }

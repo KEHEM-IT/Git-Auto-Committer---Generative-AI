@@ -49,19 +49,8 @@ class GenerateCommitCommand {
             const config = vscode.workspace.getConfiguration('gitAutoCommit');
             const useAI = config.get('useAIGeneration', false);
             let commitMessage = '';
-            if (useAI) {
-                try {
-                    vscode.window.showInformationMessage('Generating AI commit message...');
-                    commitMessage = await aiService_1.AIService.generateCommitMessage(files, diff);
-                }
-                catch (error) {
-                    vscode.window.showErrorMessage(`AI generation failed: ${error}. Falling back to rule-based generation.`);
-                    commitMessage = aiService_1.AIService.generateRuleBasedCommitMessage(files, diff);
-                }
-            }
-            else {
-                commitMessage = aiService_1.AIService.generateRuleBasedCommitMessage(files, diff);
-            }
+            vscode.window.showInformationMessage('Generating commit message...');
+            commitMessage = await aiService_1.AIService.generateCommitMessage(diff);
             await gitService_1.GitService.stageAllChanges();
             gitService_1.GitService.setCommitMessageInSourceControl(commitMessage);
             const autoCommitEnabled = config.get('enableAutoCommit', false);

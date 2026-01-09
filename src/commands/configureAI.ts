@@ -13,8 +13,7 @@ export class ConfigureAICommand {
 
         await config.update('aiProvider', provider.value, vscode.ConfigurationTarget.Global);
 
-        const apiKeyField = `${provider.value}ApiKey`;
-        const currentKey = config.get(apiKeyField, '') as string;
+        const currentKey = config.get('aiApiKey', '') as string;
         const maskedKey = currentKey ? `${currentKey.substring(0, 8)}...` : 'Not set';
 
         const apiKey = await vscode.window.showInputBox({
@@ -32,7 +31,7 @@ export class ConfigureAICommand {
 
         if (!apiKey) return;
 
-        await config.update(apiKeyField, apiKey, vscode.ConfigurationTarget.Global);
+        await config.update('aiApiKey', apiKey, vscode.ConfigurationTarget.Global);
 
         const modelOptions = AI_MODELS[provider.value] || [];
         const model = await vscode.window.showQuickPick(modelOptions, {
