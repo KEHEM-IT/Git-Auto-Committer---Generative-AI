@@ -39,16 +39,19 @@ export class DefaultCommitGenerator {
             deletions: 0,
             fileTypes: new Map<string, number>(),
             changeTypes: new Set<string>(),
-            directories: new Set<string>()
+            directories: new Set<string>(),
+            isNewFiles: false,
+            isDeletedFiles: false,
+            isModifiedFiles: false
         };
 
         let currentFile = '';
         let inNewFilesSection = false;
 
         for (const line of lines) {
-            // Handle "New files:" format
             if (line.trim() === 'New files:') {
                 inNewFilesSection = true;
+                analysis.isNewFiles = true;
                 continue;
             }
 
@@ -68,53 +71,49 @@ export class DefaultCommitGenerator {
                     const changeType = this.detectChangeType(fileName);
                     analysis.changeTypes.add(changeType);
                     
-                    // Count as addition for new files
-                    analysis.additions += 10; // Estimate lines per new file
+                    analysis.additions += 10;
                 }
                 continue;
             }
 
-            // Track file changes from diff format
             if (line.startsWith('diff --git')) {
                 const match = line.match(/b\/(.*?)(\s|$)/);
                 if (match) {
                     currentFile = match[1];
                     analysis.filesChanged.add(currentFile);
 
-                    // Track file type
                     const ext = this.getFileExtension(currentFile);
                     analysis.fileTypes.set(ext, (analysis.fileTypes.get(ext) || 0) + 1);
 
-                    // Track directory
                     const dir = this.getDirectory(currentFile);
                     if (dir) {
                         analysis.directories.add(dir);
                     }
 
-                    // Determine change type
                     const changeType = this.detectChangeType(currentFile);
                     analysis.changeTypes.add(changeType);
                 }
             } 
-            // Track additions
             else if (line.startsWith('+') && !line.startsWith('+++')) {
                 analysis.additions++;
             } 
-            // Track deletions
             else if (line.startsWith('-') && !line.startsWith('---')) {
                 analysis.deletions++;
             }
-            // Track new file marker
             else if (line.startsWith('new file mode')) {
+                analysis.isNewFiles = true;
                 if (currentFile) {
-                    analysis.additions += 10; // Estimate for new file
+                    analysis.additions += 10;
                 }
             }
-            // Track deleted file marker
             else if (line.startsWith('deleted file mode')) {
+                analysis.isDeletedFiles = true;
                 if (currentFile) {
-                    analysis.deletions += 10; // Estimate for deleted file
+                    analysis.deletions += 10;
                 }
+            }
+            else if (line.startsWith('index ') && currentFile) {
+                analysis.isModifiedFiles = true;
             }
         }
 
@@ -122,7 +121,7 @@ export class DefaultCommitGenerator {
     }
 
     /**
-     * Generates a conventional commit message (feat:, fix:, docs:, etc.)
+     * Generates a conventional commit message (feat:, fix:, etc.)
      */
     private static generateConventional(analysis: DiffAnalysis): string {
         const type = this.determineConventionalType(analysis);
@@ -132,7 +131,6 @@ export class DefaultCommitGenerator {
         const scopePart = scope ? `(${scope})` : '';
         let message = `${type}${scopePart}: ${subject}`;
 
-        // Add body with statistics if there are actual changes
         const files = Array.from(analysis.filesChanged);
         if (files.length > 0) {
             const stats = `\n\n- ${files.length} file${files.length !== 1 ? 's' : ''} changed`;
@@ -150,156 +148,283 @@ export class DefaultCommitGenerator {
     }
 
     /**
-     * Generates a simple commit message
+     * Generates a simple, clear message explaining what changed
      */
     private static generateSimple(analysis: DiffAnalysis): string {
         const files = Array.from(analysis.filesChanged);
         const fileCount = files.length;
 
         if (fileCount === 0) {
-            return 'Update files';
+            return 'Updated project files';
         }
 
+        // Single file
         if (fileCount === 1) {
-            return `Update ${files[0]}`;
+            const file = files[0];
+            const fileName = file.split('/').pop() || file;
+            
+            if (analysis.isNewFiles) {
+                return `Created ${fileName}`;
+            } else if (analysis.isDeletedFiles) {
+                return `Removed ${fileName}`;
+            } else {
+                return `Modified ${fileName}`;
+            }
         }
 
-        if (fileCount === 2) {
-            return `Update ${files[0]} and ${files[1]}`;
+        // Multiple files - describe the action and what was affected
+        const action = analysis.isNewFiles && !analysis.isModifiedFiles ? 'Added' : 
+                      analysis.isDeletedFiles && !analysis.isModifiedFiles ? 'Removed' : 
+                      'Updated';
+
+        // Group by directory or type
+        const mainDir = this.getMostCommonDirectory(analysis);
+        if (mainDir && mainDir !== '.') {
+            return `${action} ${fileCount} files in ${mainDir}`;
         }
 
-        const parts = [];
-        if (analysis.additions > 0) parts.push(`+${analysis.additions}`);
-        if (analysis.deletions > 0) parts.push(`-${analysis.deletions}`);
-
-        const firstTwo = files.slice(0, 2).join(', ');
-        const more = fileCount > 2 ? ` and ${fileCount - 2} more file${fileCount - 2 !== 1 ? 's' : ''}` : '';
+        const mainType = this.getMostCommonFileType(analysis);
+        const typeName = this.getReadableFileTypePlural(mainType);
         
-        const statsStr = parts.length > 0 ? ` (${parts.join('/')})` : '';
-
-        return `Update ${fileCount} files${statsStr}: ${firstTwo}${more}`;
+        return `${action} ${fileCount} ${typeName}`;
     }
 
     /**
-     * Generates a detailed commit message with descriptions
+     * Generates a detailed, narrative-style commit message
      */
     private static generateDetailed(analysis: DiffAnalysis): string {
-        const type = this.determineConventionalType(analysis);
         const files = Array.from(analysis.filesChanged);
-        const fileTypes = Array.from(analysis.fileTypes.entries())
-            .sort((a, b) => b[1] - a[1]);
+        const fileCount = files.length;
 
-        let message = `${type}: Update ${files.length} file${files.length !== 1 ? 's' : ''}`;
-
-        // Add file type breakdown
-        if (fileTypes.length > 0) {
-            const typeDesc = fileTypes
-                .map(([ext, count]) => `${count} ${ext} file${count !== 1 ? 's' : ''}`)
-                .join(', ');
-            message += `\n\nModified: ${typeDesc}`;
+        if (fileCount === 0) {
+            return 'Made updates to the project';
         }
 
-        // Add statistics
-        const stats = [];
-        if (analysis.additions > 0) stats.push(`${analysis.additions} additions`);
-        if (analysis.deletions > 0) stats.push(`${analysis.deletions} deletions`);
-        if (stats.length > 0) {
-            message += `\n\nChanges: ${stats.join(', ')}`;
-        }
+        // Start with a descriptive summary
+        let message = this.createNarrativeSummary(analysis, fileCount);
 
-        // Add affected files (up to 5)
-        if (files.length > 0) {
-            const fileList = files.slice(0, 5).map(f => `  - ${f}`).join('\n');
-            const more = files.length > 5 ? `\n  ... and ${files.length - 5} more files` : '';
-            message += `\n\nFiles:\n${fileList}${more}`;
-        }
+        // Add details about what changed
+        message += '\n\n' + this.describeChanges(analysis, files);
+
+        // Add technical details
+        message += '\n\n' + this.createTechnicalSummary(analysis);
 
         return message;
     }
 
     /**
-     * Determines the conventional commit type based on changes
+     * Creates a narrative summary
+     */
+    private static createNarrativeSummary(analysis: DiffAnalysis, fileCount: number): string {
+        const changeTypes = Array.from(analysis.changeTypes);
+        
+        // Documentation updates
+        if (changeTypes.includes('docs')) {
+            return fileCount === 1 ? 
+                'Updated project documentation with latest information' :
+                'Refreshed documentation to reflect current project state';
+        }
+
+        // Configuration changes
+        if (changeTypes.includes('config')) {
+            return 'Adjusted project configuration and settings';
+        }
+
+        // Test changes
+        if (changeTypes.includes('test')) {
+            return 'Enhanced test coverage and testing capabilities';
+        }
+
+        // Style changes
+        if (changeTypes.includes('style')) {
+            return 'Improved visual appearance and styling';
+        }
+
+        // Code changes
+        if (analysis.isNewFiles && !analysis.isModifiedFiles) {
+            const mainType = this.getMostCommonFileType(analysis);
+            const typeName = this.getReadableFileTypePlural(mainType);
+            return `Introduced new ${typeName} to expand functionality`;
+        }
+
+        if (analysis.isDeletedFiles && !analysis.isModifiedFiles) {
+            return 'Cleaned up unused code and removed obsolete files';
+        }
+
+        if (analysis.deletions > analysis.additions * 1.5) {
+            return 'Refactored codebase to improve maintainability';
+        }
+
+        return `Enhanced ${fileCount} file${fileCount !== 1 ? 's' : ''} with improvements`;
+    }
+
+    /**
+     * Describes what changed in detail
+     */
+    private static describeChanges(analysis: DiffAnalysis, files: string[]): string {
+        const filesByType = this.groupFilesByType(files);
+        const descriptions: string[] = [];
+
+        // Describe each file type
+        const sortedTypes = Array.from(filesByType.entries())
+            .sort((a, b) => b[1].length - a[1].length)
+            .slice(0, 3);
+
+        for (const [type, typeFiles] of sortedTypes) {
+            const count = typeFiles.length;
+            const typeName = this.getReadableFileTypePlural(type);
+            
+            if (count === 1) {
+                const fileName = typeFiles[0].split('/').pop() || typeFiles[0];
+                descriptions.push(`Modified ${fileName}`);
+            } else {
+                descriptions.push(`Updated ${count} ${typeName}`);
+            }
+        }
+
+        if (descriptions.length === 0) {
+            return 'Made various improvements to the codebase';
+        }
+
+        return 'Changes include: ' + descriptions.join(', ');
+    }
+
+    /**
+     * Creates a technical summary with stats
+     */
+    private static createTechnicalSummary(analysis: DiffAnalysis): string {
+        const lines = [];
+        
+        if (analysis.additions > 0 && analysis.deletions > 0) {
+            lines.push(`Modified ${analysis.additions + analysis.deletions} lines`);
+            lines.push(`(+${analysis.additions} additions, -${analysis.deletions} deletions)`);
+        } else if (analysis.additions > 0) {
+            lines.push(`Added ${analysis.additions} new lines`);
+        } else if (analysis.deletions > 0) {
+            lines.push(`Removed ${analysis.deletions} lines`);
+        }
+
+        return lines.join(' ');
+    }
+
+    /**
+     * Groups files by type
+     */
+    private static groupFilesByType(files: string[]): Map<string, string[]> {
+        const groups = new Map<string, string[]>();
+        
+        for (const file of files) {
+            const ext = this.getFileExtension(file);
+            if (!groups.has(ext)) {
+                groups.set(ext, []);
+            }
+            groups.get(ext)!.push(file);
+        }
+        
+        return groups;
+    }
+
+    /**
+     * Gets the most common directory
+     */
+    private static getMostCommonDirectory(analysis: DiffAnalysis): string {
+        const dirs = Array.from(analysis.directories);
+        if (dirs.length === 0) return '.';
+        if (dirs.length === 1) return dirs[0];
+        
+        // Return the first directory
+        return dirs[0];
+    }
+
+    /**
+     * Gets the most common file type
+     */
+    private static getMostCommonFileType(analysis: DiffAnalysis): string {
+        const types = Array.from(analysis.fileTypes.entries());
+        if (types.length === 0) return 'files';
+        
+        const sorted = types.sort((a, b) => b[1] - a[1]);
+        return sorted[0][0];
+    }
+
+    /**
+     * Gets human-readable file type (plural)
+     */
+    private static getReadableFileTypePlural(ext: string): string {
+        const typeMap: { [key: string]: string } = {
+            'ts': 'TypeScript files',
+            'js': 'JavaScript files',
+            'tsx': 'React components',
+            'jsx': 'React components',
+            'py': 'Python files',
+            'java': 'Java files',
+            'md': 'documentation files',
+            'json': 'configuration files',
+            'yml': 'YAML files',
+            'yaml': 'YAML files',
+            'css': 'stylesheets',
+            'scss': 'stylesheets',
+            'html': 'HTML files',
+            'xml': 'XML files',
+        };
+        
+        return typeMap[ext] || 'files';
+    }
+
+    /**
+     * Determines conventional commit type
      */
     private static determineConventionalType(analysis: DiffAnalysis): string {
-        const files = Array.from(analysis.filesChanged);
         const changeTypes = Array.from(analysis.changeTypes);
 
-        // Check for specific patterns
         if (changeTypes.includes('test')) return 'test';
         if (changeTypes.includes('docs')) return 'docs';
         if (changeTypes.includes('config')) return 'chore';
         if (changeTypes.includes('style')) return 'style';
 
-        // Check if it's mainly deletions (cleanup)
         if (analysis.deletions > analysis.additions * 2) {
             return 'refactor';
         }
 
-        // Check file types
-        const hasSourceFiles = files.some(f => 
-            /\.(ts|js|tsx|jsx|py|java|cpp|c|go|rs)$/i.test(f)
-        );
-
-        if (hasSourceFiles) {
-            // If more additions than deletions, likely a feature
-            if (analysis.additions > analysis.deletions * 1.5) {
-                return 'feat';
-            }
-            // Otherwise, could be a fix
-            return 'fix';
+        if (analysis.additions > analysis.deletions * 1.5) {
+            return 'feat';
         }
 
-        return 'chore';
+        return 'fix';
     }
 
     /**
-     * Determines the scope based on directory or file type
+     * Determines scope
      */
     private static determineScope(analysis: DiffAnalysis): string | null {
         const dirs = Array.from(analysis.directories);
         
-        // If all changes are in one directory, use that as scope
         if (dirs.length === 1 && dirs[0] !== '.') {
             return dirs[0];
-        }
-
-        // If changes are in multiple related directories, try to find common parent
-        if (dirs.length > 1) {
-            const commonDir = this.findCommonDirectory(dirs);
-            if (commonDir && commonDir !== '.') {
-                return commonDir;
-            }
         }
 
         return null;
     }
 
     /**
-     * Generates a subject line for the commit
+     * Generates subject line
      */
     private static generateSubject(analysis: DiffAnalysis): string {
         const files = Array.from(analysis.filesChanged);
-        const fileTypes = Array.from(analysis.fileTypes.entries())
-            .sort((a, b) => b[1] - a[1]);
 
-        // If single file, use filename
         if (files.length === 1) {
             const fileName = files[0].split('/').pop() || files[0];
             return `update ${fileName}`;
         }
 
-        // If multiple files of same type, mention the type
-        if (fileTypes.length === 1) {
-            const [ext, count] = fileTypes[0];
-            return `update ${count} ${ext} file${count !== 1 ? 's' : ''}`;
-        }
-
-        // General message
-        return `update ${files.length} files`;
+        const mainType = this.getMostCommonFileType(analysis);
+        const count = files.length;
+        
+        return `update ${count} ${mainType} file${count !== 1 ? 's' : ''}`;
     }
 
     /**
-     * Detects the type of change based on filename
+     * Detects change type from filename
      */
     private static detectChangeType(filename: string): string {
         const name = filename.toLowerCase();
@@ -307,13 +432,13 @@ export class DefaultCommitGenerator {
         if (name.includes('test') || name.includes('.spec.') || name.includes('.test.')) {
             return 'test';
         }
-        if (name.includes('readme') || name.includes('doc') || name.endsWith('.md')) {
+        if (name.endsWith('.md') || name.includes('readme') || name.includes('doc')) {
             return 'docs';
         }
-        if (name.includes('config') || name.includes('.json') || name.includes('.yml') || name.includes('.yaml')) {
+        if (name.includes('config') || name.endsWith('.json') || name.endsWith('.yml') || name.endsWith('.yaml')) {
             return 'config';
         }
-        if (name.includes('.css') || name.includes('.scss') || name.includes('.sass') || name.includes('.less')) {
+        if (name.endsWith('.css') || name.endsWith('.scss') || name.endsWith('.sass')) {
             return 'style';
         }
 
@@ -325,10 +450,7 @@ export class DefaultCommitGenerator {
      */
     private static getFileExtension(filename: string): string {
         const parts = filename.split('.');
-        if (parts.length > 1) {
-            return parts[parts.length - 1];
-        }
-        return 'file';
+        return parts.length > 1 ? parts[parts.length - 1] : 'file';
     }
 
     /**
@@ -336,31 +458,7 @@ export class DefaultCommitGenerator {
      */
     private static getDirectory(filename: string): string {
         const parts = filename.split('/');
-        if (parts.length > 1) {
-            return parts[0];
-        }
-        return '.';
-    }
-
-    /**
-     * Finds common directory among multiple directories
-     */
-    private static findCommonDirectory(dirs: string[]): string | null {
-        if (dirs.length === 0) return null;
-        if (dirs.length === 1) return dirs[0];
-
-        const parts = dirs.map(d => d.split('/'));
-        const minLength = Math.min(...parts.map(p => p.length));
-
-        for (let i = 0; i < minLength; i++) {
-            const first = parts[0][i];
-            if (!parts.every(p => p[i] === first)) {
-                if (i === 0) return null;
-                return parts[0].slice(0, i).join('/');
-            }
-        }
-
-        return parts[0].slice(0, minLength).join('/');
+        return parts.length > 1 ? parts[0] : '.';
     }
 }
 
@@ -374,4 +472,7 @@ interface DiffAnalysis {
     fileTypes: Map<string, number>;
     changeTypes: Set<string>;
     directories: Set<string>;
+    isNewFiles: boolean;
+    isDeletedFiles: boolean;
+    isModifiedFiles: boolean;
 }

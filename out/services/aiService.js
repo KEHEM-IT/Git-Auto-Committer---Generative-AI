@@ -47,13 +47,8 @@ class AIService {
             return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
         }
         const aiConfig = await this.getAIConfig();
-        // Use default generator if no API key is configured
+        // Use default generator if no API key is configured (no notification)
         if (!aiConfig.apiKey) {
-            vscode.window.showInformationMessage('Using default commit message generator. Configure AI for smarter messages.', 'Configure AI').then(selection => {
-                if (selection === 'Configure AI') {
-                    vscode.commands.executeCommand('gitAutoCommit.configureAI');
-                }
-            });
             return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
         }
         try {
@@ -62,7 +57,7 @@ class AIService {
         }
         catch (error) {
             console.error('AI generation error:', error);
-            vscode.window.showWarningMessage(`AI generation failed: ${error.message}. Using default generator.`);
+            // Silently fallback to default generator
             return defaultCommitGenerator_1.DefaultCommitGenerator.generate(diff);
         }
     }

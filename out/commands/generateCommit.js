@@ -46,16 +46,24 @@ class GenerateCommitCommand {
             }
             const files = await gitService_1.GitService.getChangedFiles();
             const diff = await gitService_1.GitService.getGitDiff();
-            // Generate commit message using AIService
-            // AIService will automatically fallback to DefaultCommitGenerator if:
-            // - AI is disabled (useAIGeneration = false)
-            // - No API key is configured
-            // - AI generation fails
+            // Show generating message
             let commitMessage = '';
             if (!silent) {
-                vscode.window.showInformationMessage('Generating commit message...');
+                vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: "Generating commit message...",
+                    cancellable: false
+                }, async (progress) => {
+                    commitMessage = await aiService_1.AIService.generateCommitMessage(diff);
+                    return;
+                });
+                // Wait a bit for the progress to show
+                await new Promise(resolve => setTimeout(resolve, 100));
+                commitMessage = await aiService_1.AIService.generateCommitMessage(diff);
             }
-            commitMessage = await aiService_1.AIService.generateCommitMessage(diff);
+            else {
+                commitMessage = await aiService_1.AIService.generateCommitMessage(diff);
+            }
             await gitService_1.GitService.stageAllChanges();
             gitService_1.GitService.setCommitMessageInSourceControl(commitMessage);
             const config = vscode.workspace.getConfiguration('gitAutoCommit');
@@ -74,13 +82,9 @@ class GenerateCommitCommand {
                 }
             }
             else if (!silent) {
-                const action = await vscode.window.showInformationMessage('Commit message generated and staged. Ready to commit?', 'Commit', 'Edit Message', 'Cancel');
-                if (action === 'Commit') {
-                    await this.commitChanges(context, commitMessage, files, workspaceFolder.uri.fsPath);
-                }
-                else if (action === 'Edit Message') {
-                    vscode.commands.executeCommand('workbench.view.scm');
-                }
+                // Message is already in source control, user can review and commit manually
+                // No additional notification needed
+                vscode.commands.executeCommand('workbench.view.scm');
             }
         }
         catch (error) {
