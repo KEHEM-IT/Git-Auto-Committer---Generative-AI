@@ -12,7 +12,7 @@ export class ShowDashboardCommand {
         );
 
         const commitHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
-        panel.webview.html = DashboardUI.getDashboardHtml(commitHistory);
+        panel.webview.html = DashboardUI.getDashboardHtml(commitHistory, context.extensionPath);
 
         panel.webview.onDidReceiveMessage(
             async message => {
@@ -21,19 +21,19 @@ export class ShowDashboardCommand {
                 switch (message.command) {
                     case 'refresh':
                         const updatedHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(updatedHistory);
+                        panel.webview.html = DashboardUI.getDashboardHtml(updatedHistory, context.extensionPath);
                         break;
                         
                     case 'clearHistory':
                         await context.globalState.update('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml([]);
+                        panel.webview.html = DashboardUI.getDashboardHtml([], context.extensionPath);
                         vscode.window.showInformationMessage('✓ Commit history cleared');
                         break;
                         
                     case 'configureAI':
                         await vscode.commands.executeCommand('gitAutoCommit.configureAI');
                         const newHistory: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(newHistory);
+                        panel.webview.html = DashboardUI.getDashboardHtml(newHistory, context.extensionPath);
                         break;
                         
                     case 'openSettings':
@@ -52,7 +52,7 @@ export class ShowDashboardCommand {
                             !currentAuto ? '✓ Auto-commit enabled' : '✗ Auto-commit disabled'
                         );
                         const history1: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history1);
+                        panel.webview.html = DashboardUI.getDashboardHtml(history1, context.extensionPath);
                         break;
                         
                     case 'toggleConfirmation':
@@ -64,28 +64,28 @@ export class ShowDashboardCommand {
                                 : '✓ Auto-commit will ask for confirmation'
                         );
                         const history2: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history2);
+                        panel.webview.html = DashboardUI.getDashboardHtml(history2, context.extensionPath);
                         break;
                         
                     case 'updateInterval':
                         await config.update('autoCommitInterval', message.value, vscode.ConfigurationTarget.Global);
                         vscode.window.showInformationMessage(`✓ Commit interval updated to ${message.value} minutes`);
                         const history3: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history3);
+                        panel.webview.html = DashboardUI.getDashboardHtml(history3, context.extensionPath);
                         break;
                         
                     case 'updateReminderInterval':
                         await config.update('reminderInterval', message.value, vscode.ConfigurationTarget.Global);
                         vscode.window.showInformationMessage(`✓ Reminder interval updated to ${message.value} minutes`);
                         const history4: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history4);
+                        panel.webview.html = DashboardUI.getDashboardHtml(history4, context.extensionPath);
                         break;
                         
                     case 'updateCommitStyle':
                         await config.update('commitMessageStyle', message.value, vscode.ConfigurationTarget.Global);
                         vscode.window.showInformationMessage(`✓ Commit style updated to ${message.value}`);
                         const history5: CommitHistory[] = context.globalState.get('commitHistory', []);
-                        panel.webview.html = DashboardUI.getDashboardHtml(history5);
+                        panel.webview.html = DashboardUI.getDashboardHtml(history5, context.extensionPath);
                         break;
                 }
             }

@@ -190,7 +190,7 @@ export class StatusBarManager {
             message,
             'Commit Now',
             'View in Source Control',
-            'Dismiss', 'Commit Now'
+            'Dismiss'
         );
 
         if (action === 'Commit Now') {
